@@ -1,0 +1,119 @@
+/*
+ * Shared settings. These must be defined BEFORE they are used
+ * (the C preprocessor reads top to bottom).
+ */
+#define LEFT_HAND_KEYS  \
+    0  1  2  3  4  5    \
+    12 13 14 15 16 17   \
+    24 25 26 27 28 29   \
+    36 37 38 39 40 41   \
+    48 49 50
+
+#define RIGHT_HAND_KEYS \
+    6  7  8  9 10 11    \
+    18 19 20 21 22 23   \
+    30 31 32 33 34 35   \
+    42 43 44 45 46 47   \
+    51 52 53
+
+#define THUMB_KEYS  \
+    54 55 56   57 58 59
+
+#define QUICK_TAP_MS 175
+#define TAPPING_TERM_MS 250
+#define PRIOR_IDLE_MS 150
+
+behaviors {
+    /*
+     * ht_tab_opt: Generic hold-tap built on two &kp bindings.
+     *   Used as: &ht_tab_opt <HOLD_KEY> <TAP_KEY>
+     *   tap  -> sends TAP_KEY
+     *   hold -> holds HOLD_KEY
+     * Mostly here as a building block for td_tab_opt below.
+     */
+    ht_tab_opt: ht_tab_opt {
+        compatible = "zmk,behavior-hold-tap";
+        #binding-cells = <2>;              // 2 params: hold key, tap key
+        flavor = "balanced";               // hold if another key is pressed AND released
+                                           // while this key is down, or if it's held past
+                                           // tapping-term-ms. Otherwise it's a tap.
+        tapping-term-ms = <200>;           // hold longer than this = hold
+        quick-tap-ms = <150>;              // press again within 150 ms of a tap = repeat the
+                                           // tap (for example, hold to auto-repeat Tab)
+        bindings = <&kp>, <&kp>;           // <hold behavior>, <tap behavior>
+    };
+
+   /*
+     * td_tab_opt: Tab / Option / Shift+Option on one key.
+     *   tap             -> Tab
+     *   hold            -> Left Alt while held (through ht_tab_opt)
+     *   tap, then hold  -> Shift + Left Alt while held
+     *   double tap      -> Shift + Left Alt once
+     * Note: a single Tab arrives about 200 ms late, because the tap dance
+     * waits to see if a second tap is coming.
+     */
+    td_tab_opt: td_tab_opt {
+        compatible = "zmk,behavior-tap-dance";
+        #binding-cells = <0>;              // takes no parameters in the keymap: &td_tab_opt
+        tapping-term-ms = <200>;           // time window for counting taps
+        bindings = <&ht_tab_opt LALT TAB>, // 1st tap: hold = Alt, tap = Tab
+                   <&kp LS(LALT)>;         // 2nd tap: Left Shift + Left Alt
+    };
+
+    /*
+     * td_quote_hyper: Option+' / Hyper / ' on one key.
+     *   tap             -> Option + '
+     *   hold            -> Hyper (Ctrl + Option + Shift + Cmd) while held
+     *                      (through ht_tab_opt)
+     *   tap, then hold  -> ' held (the OS auto-repeats it)
+     *   double tap      -> ' once
+     * Note: a single tap arrives about 200 ms late, because the tap dance
+     * waits to see if a second tap is coming.
+     */
+    td_quote_hyper: td_quote_hyper {
+        compatible = "zmk,behavior-tap-dance";
+        #binding-cells = <0>;              // takes no parameters in the keymap: &td_quote_hyper
+        tapping-term-ms = <200>;           // time window for counting taps
+        bindings = <&ht_tab_opt LC(LA(LS(LGUI))) LA(SQT)>, // 1st tap: hold = Hyper, tap = Option+'
+                   <&kp SQT>;              // 2nd tap: plain ', held for as long as the key is held
+    };
+
+    /*
+     * hml: Left-hand home row mod (positional / "bilateral").
+     *   Used as: &hml <HOLD_KEY> <TAP_KEY>, e.g. &hml LSHFT D
+     *   tap  -> sends TAP_KEY
+     *   hold -> holds HOLD_KEY, but ONLY when the next key is on the right
+     *           hand or a thumb key. Rolling into another left-hand key
+     *           (e.g. d -> r) always gives the tap.
+     */
+    hml: homerow_mods_left {
+        compatible = "zmk,behavior-hold-tap";
+        #binding-cells = <2>;              // 2 params: hold key, tap key
+        flavor = "balanced";               // hold if another key is pressed AND released
+                                           // while this key is down, or held past the term
+        tapping-term-ms = <TAPPING_TERM_MS>;
+        quick-tap-ms = <QUICK_TAP_MS>;     // tap then hold quickly = repeat the letter (ddddd)
+        require-prior-idle-ms = <PRIOR_IDLE_MS>; // typed something in the last 150 ms = always tap
+        hold-trigger-key-positions = <RIGHT_HAND_KEYS THUMB_KEYS>; // only these keys can trigger hold
+        hold-trigger-on-release;           // decide on release, so two mods on the same hand can
+                                           // be held together
+        bindings = <&kp>, <&kp>;           // <hold behavior>, <tap behavior>
+    };
+
+    /*
+     * hmr: Right-hand home row mod, the mirror of hml.
+     *   Used as: &hmr <HOLD_KEY> <TAP_KEY>, e.g. &hmr RSHFT K
+     *   hold only triggers when the next key is on the left hand or a thumb key.
+     */
+    hmr: homerow_mods_right {
+        compatible = "zmk,behavior-hold-tap";
+        #binding-cells = <2>;
+        flavor = "balanced";
+        tapping-term-ms = <TAPPING_TERM_MS>;
+        quick-tap-ms = <QUICK_TAP_MS>;
+        require-prior-idle-ms = <PRIOR_IDLE_MS>;
+        hold-trigger-key-positions = <LEFT_HAND_KEYS THUMB_KEYS>;
+        hold-trigger-on-release;
+        bindings = <&kp>, <&kp>;
+    };
+};

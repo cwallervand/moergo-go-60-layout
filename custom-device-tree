@@ -1,0 +1,13 @@
+/*
+ * Sticky keys: quick-release
+ *
+ * By default a sticky key stays active until the next key is *released*,
+ * so fast rolls (e.g. sticky Shift -> "t" -> "h") can apply the modifier
+ * to more than one key. quick-release turns the sticky key off as soon as
+ * the next key is *pressed*, so it only applies to that one key.
+ *
+ * This overrides the built-in &sk, so every sticky key in the layout changes.
+ */
+&sk {
+    quick-release;
+};
