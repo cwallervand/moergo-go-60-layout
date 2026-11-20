@@ -22,8 +22,45 @@
 #define QUICK_TAP_MS 175
 #define TAPPING_TERM_MS 250
 #define PRIOR_IDLE_MS 150
+#define TAP_DANCE_TERM_MS 200
+
+/*
+ * TAP_DANCE(name, TAP_KEY, DOUBLE_TAP_KEY): generic tap-dance generator.
+ *   ZMK tap-dance behaviors can't take parameters, so this macro builds a
+ *   complete tap-dance behavior from one line. Put it inside behaviors { }:
+ *       TAP_DANCE(td_a_b, A, B)
+ *   then use it in the layout editor as: &td_a_b
+ *     tap         -> TAP_KEY
+ *     double tap  -> DOUBLE_TAP_KEY
+ *   Both keys can include modifiers, e.g. LS(N1) or LG(C).
+ *   Note: a single tap arrives about TAP_DANCE_TERM_MS late, because the tap
+ *   dance waits to see if a second tap is coming.
+ *
+ * TAP_DANCE_CORE is a separate object-like macro because inside a
+ * function-like macro a '#' is the stringize operator, which would break
+ * "#binding-cells".
+ */
+#define TAP_DANCE_CORE compatible = "zmk,behavior-tap-dance"; #binding-cells = <0>
+
+#define TAP_DANCE(name, tap_key, double_tap_key)          \
+    name: name {                                          \
+        TAP_DANCE_CORE;                                   \
+        tapping-term-ms = <TAP_DANCE_TERM_MS>;            \
+        bindings = <&kp tap_key>, <&kp double_tap_key>;   \
+    };
 
 behaviors {
+    /*
+     * Generic tap-dances (see TAP_DANCE above). One line per key pair:
+     *   TAP_DANCE(td_esc_grave, ESC, GRAVE)   // use as &td_esc_grave
+     */
+
+    // tap -> Left Option + o, double tap -> ; (Shift + double tap -> :)
+    TAP_DANCE(td_opt_o_semi, LA(O), SEMI)
+
+    // tap -> Left Option + a, double tap -> \ (Shift + double tap -> |)
+    TAP_DANCE(td_opt_a_bslh, LA(A), BSLH)
+
     /*
      * ht_tab_opt: Generic hold-tap built on two &kp bindings.
      *   Used as: &ht_tab_opt <HOLD_KEY> <TAP_KEY>
